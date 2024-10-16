@@ -1,5 +1,5 @@
-# Flappy-Bird
-Flappy Bird is a 2D game where players control a small bird, guiding it through a series of obstacles (pipes) with just a tap to make the bird go upwards. The goal is to navigate the bird through these gaps without hitting the pipes or the ground, scoring points for every successful pass. The longer you survive, the higher your score.
+# Flap N Dash
+Flap and Dash is a 2D game where players control a small character, guiding it through a series of obstacles with just a tap to make the character goes against gravity. The goal is to navigate it through these gaps without hitting the pipes or the ground, scoring points for every successful pass. The longer you survive, the higher your score.
 ### How to demo
 Start the application, click the Start button and your character, a bird is going to show up. Then you must press space every time you wish to move the bird upwards. You are going to see some pipes; you have to go through the hole between these obstacles. If you touch any of the pipes you lost, then you can either click on the New Game button or the Exit one. Also there’s a score counter on the top of your screen.
 ## Features:
