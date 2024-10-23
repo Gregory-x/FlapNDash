@@ -29,16 +29,21 @@ public class FlapNDash {
     int score = 0;
     int birdY = 0, birdVelocity = 0;
     int backgroundX1 = 0, backgroundX2;
-    final int BACKGROUND_SPEED = 4;
+    int BACKGROUND_SPEED = 4;
     int currentBackgroundIndex = 0;
     List<Rectangle> pipes = new ArrayList<>();
     Random random = new Random();
-    int gravity = 1;  
+    int gravity = 1;
+    int n;  
     final int JUMP_STRENGTH = -10;
     final int PIPE_SPACING = 400;
     final int PIPE_WIDTH = 80;
     final int PIPE_GAP = 200;
-    final int PIPE_SPEED = 4;
+    int PIPE_SPEED = 4;
+    private String readyText = "Ready?";
+    private float textAlpha = 1.0f; // Opacity value for fading
+    private boolean isFading = false;
+    private boolean draw_Notification = false;
 
     int pipeCounter = 0;  // Counter for passed pipes
     boolean gravityFlipped = false;  // Track if gravity is flipped
@@ -49,12 +54,17 @@ public class FlapNDash {
 
     // object constructor
     public FlapNDash() {
+        // main init
         f = new JFrame("Flap n Dash");
+        //n = (int) (Math.random() * (8 - 5 + 1)) + 3;
+        //System.out.println(n);
         backgroundImages = new ArrayList<>();
-
         try {
-            backgroundImages.add(ImageIO.read(new File("image/w_cave1.jpg")));
+            backgroundImages.add(ImageIO.read(new File("image/w_cave1.jpg"))); // 0
             backgroundImages.add(ImageIO.read(new File("image/w_cave2.jpg")));
+            backgroundImages.add(ImageIO.read(new File("image/w_cave1_flipped.jpg")));
+            backgroundImages.add(ImageIO.read(new File("image/w_cave2_flipped.jpg"))); // 3
+
             //backgroundImages.add(ImageIO.read(new File("image/background2.png")));
             characterImg = ImageIO.read(new File("image/stefan.png"));
             //pipeImg = ImageIO.read(new File("image/pipe.png"));
@@ -70,26 +80,36 @@ public class FlapNDash {
         }
 
         backgroundX2 = backgroundImages.get(0).getWidth();
-
+       
         JPanel panel = new JPanel() {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
 
                 // Draw the appropriate background based on game state
-            if (start_screen && startBackgroundImage != null) {
-                g.drawImage(startBackgroundImage, 0, 0, getWidth(), getHeight(), null);
-            } else if (end_screen && endBackgroundImage != null) {
-                g.drawImage(endBackgroundImage, 0, 0, getWidth(), getHeight(), null);
-            } else if (gameRunning) {
-                BufferedImage currentBackground = backgroundImages.get(currentBackgroundIndex);
-                if (currentBackground != null) {
-                // Draw the two background images
-                    g.drawImage(currentBackground, backgroundX1, 0, null);
-                    g.drawImage(currentBackground, backgroundX2, 0, null);
+                if (start_screen && startBackgroundImage != null) {
+                    g.drawImage(startBackgroundImage, 0, 0, getWidth(), getHeight(), null);
+                } else if (end_screen && endBackgroundImage != null) {
+                    g.drawImage(endBackgroundImage, 0, 0, getWidth(), getHeight(), null);
+                } else if (gameRunning) {
+                    if(gravityFlipped)
+                        currentBackgroundIndex=2;
+                    else
+                        currentBackgroundIndex=0;
+                    BufferedImage currentBackground = backgroundImages.get(currentBackgroundIndex);
+                    if (currentBackground != null) {
+                    // Draw the two background images
+                        g.drawImage(currentBackground, backgroundX1, 0, null);
+                        g.drawImage(currentBackground, backgroundX2, 0, null);
+                    }
                 }
-            }
-            
+                if (draw_Notification)
+                {
+                    FontMetrics fm = g.getFontMetrics();
+                    int x = (getWidth() - fm.stringWidth(readyText)) / 2; // Center the text
+                    int y = getHeight() / 2;
+                    g.drawString(readyText, x, y);
+                }
                 // Draw character only if the game is running
                 if (gameRunning && characterImg != null) {
                     int newCharacterWidth = 80;  
@@ -107,7 +127,7 @@ public class FlapNDash {
                     Rectangle pipe = pipes.get(i);
 
                     // Check if the pipe is the special one where gravity flips
-                    if (pipeCounter == 5 && i == pipes.size() - 2) {
+                    if (gravityFlipped) {
                         g.setColor(specialPipeColor);  // Special color for gravity-flip pipe
                     } else {
                         g.setColor(Color.LIGHT_GRAY);  // Normal pipe color
@@ -122,6 +142,7 @@ public class FlapNDash {
         scoreLabel = new JLabel("Score: " + score);
         scoreLabel.setFont(new Font("Arial", Font.BOLD, 30));
         scoreLabel.setBounds(10, 10, 200, 50);
+        scoreLabel.setForeground(new Color(173, 216, 230));
         panel.add(scoreLabel);
 
         JButton startButton = new JButton("Start");
@@ -151,6 +172,7 @@ public class FlapNDash {
                 }
             }
         });
+        
 
         // start button event click
         startButton.addActionListener(new ActionListener() {
@@ -226,41 +248,39 @@ public class FlapNDash {
     }
 
     private void updateGame() {
+        // Move backgrounds to the left
+        backgroundX1 -= BACKGROUND_SPEED;
+        backgroundX2 -= BACKGROUND_SPEED;
+    
+        BufferedImage currentBackground = backgroundImages.get(currentBackgroundIndex);
+        int backgroundWidth = currentBackground.getWidth();
         
-    // Move backgrounds to the left
-    backgroundX1 -= BACKGROUND_SPEED;
-    backgroundX2 -= BACKGROUND_SPEED;
-
-    BufferedImage currentBackground = backgroundImages.get(currentBackgroundIndex);
-    int backgroundWidth = currentBackground.getWidth();
-
-    // Reset background positions when they go off-screen
-    if (backgroundX1 + backgroundWidth <= 0) {
-        backgroundX1 = backgroundX2 + backgroundWidth; 
-    }
-
-    if (backgroundX2 + backgroundWidth <= 0) {
-        backgroundX2 = backgroundX1 + backgroundWidth; 
-    }
-        
+        // Reset background positions when they go off-screen
+        if (backgroundX1 + backgroundWidth <= 0) {
+            backgroundX1 = backgroundX2 + backgroundWidth; 
+        }
+    
+        if (backgroundX2 + backgroundWidth <= 0) {
+            backgroundX2 = backgroundX1 + backgroundWidth; 
+        }
+            
         if (gravityFlipped) {
             birdVelocity -= gravity;  // Gravity is reversed (pulling bird upwards)
         } else {
             birdVelocity += gravity;  // Normal gravity (pulling bird downwards)
         }
         birdY += birdVelocity;
-
+    
         Rectangle bird = new Rectangle(100, birdY, 50, 50);
+        
 
         for (int i = 0; i < pipes.size(); i++) {
             Rectangle pipe = pipes.get(i);
             pipe.x -= PIPE_SPEED;
-            
+
             if (pipe.x + pipe.width < 0) {
                 pipes.remove(i);
                 i--;
-                score++;
-                scoreLabel.setText("Score: " + score/2);
             }
 
             if (bird.intersects(pipe)) {
@@ -270,14 +290,60 @@ public class FlapNDash {
 
         // Add new pipes every time the previous pipe goes off-screen
         if (pipes.isEmpty() || pipes.get(pipes.size() - 1).x < f.getWidth() - PIPE_SPACING) {
+            score ++;
+            scoreLabel.setText("Score: " + score);
             addPipe();
         }
-
+        if(score == n && score > 0)
+        {
+            System.out.println("Time to flip grav");
+            gravityFlipped = !gravityFlipped;
+            n += (int) (Math.random() * (10 - 5 + 1)) + 5;
+            System.out.println(n);
+            /* 
+            BACKGROUND_SPEED = 2;
+            PIPE_SPEED = 2; */
+            gravity_flipped_stuff();
+        }
+    
         if (birdY > f.getHeight() || birdY < 0) {
             gameOver();
         }
     }
+    
+    private void gravity_flipped_stuff(){
+        // Simulate score update for testing
+            BACKGROUND_SPEED = 2;
+            PIPE_SPEED = 2;
 
+            // Start fading effect
+            isFading = true;
+            // Create a timer for fading text
+            Timer fadeTimer = new Timer(500, new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent e) {
+                    if (isFading) {
+                        draw_Notification = true;
+                        textAlpha -= 0.1f; // Decrease opacity
+                        if (textAlpha <= 0) {
+                            textAlpha = 0; // Cap the opacity at 0
+                            ((Timer) e.getSource()).stop(); // Stop fading timer
+                            isFading = false; // Mark fading as complete
+                            draw_Notification = false;
+                        }
+                        f.repaint(); // Repaint to update text visibility
+                    }
+                }
+            });
+            fadeTimer.start();
+
+            // Timer to reset speeds after 1.5 seconds
+            new Timer(500, event -> {
+                BACKGROUND_SPEED = 4; // Reset to original speed
+                PIPE_SPEED = 4; // Reset to original speed
+            }).start();
+        
+    }
     private void jump() {
         birdVelocity = JUMP_STRENGTH;
     }
@@ -298,24 +364,21 @@ public class FlapNDash {
         // Create pipes with normal color
         pipes.add(new Rectangle(pipeX, f.getHeight() - height, PIPE_WIDTH, height));
         pipes.add(new Rectangle(pipeX, 0, PIPE_WIDTH, f.getHeight() - height - PIPE_GAP));
-
-        // Increment pipe counter and check if it's time to flip gravity
-        pipeCounter++;
-        if (score%3==0 && score>0) {
-            gravityFlipped = !gravityFlipped;  // Flip gravity
-            pipeCounter = 0;  // Reset counter
-        }
     }
 
     private void resetGame() {
         pipes.clear();
+        n = 5 + (int)(Math.random() * 11);
         score = 0;
         scoreLabel.setText("Score: " + score);
         birdY = (f.getHeight() - 50) / 2; 
         birdVelocity = 0; 
         gravityFlipped = false;  // Reset gravity state
         pipeCounter = 0;  // Reset pipe counter
-        currentBackgroundIndex = 0;  
+        currentBackgroundIndex = 0;
+        draw_Notification = false;  
+        n = (int) (Math.random() * (8 - 5 + 1)) + 3;
+        System.out.println(n);
         addPipe();
     }
 
