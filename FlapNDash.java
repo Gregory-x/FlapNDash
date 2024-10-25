@@ -7,13 +7,12 @@ import java.util.List;
 import java.util.Random;
 import javax.imageio.ImageIO;
 import javax.swing.*;
-
-// To do: - MUST: portals, score not +1 when it ends, fix scoring when it goes through the pipes not when the pipes disappear.
+/* 
+// To do: - MUST: portals,
 //        - animation to jump into mine when pressing on start and dying in lava or ether when dying/losing
 //        - texture pipes
-//        - portal between pipes, effect?
-//        
-//        When I start the game I need that the current background is removed and I use the specific one for the game, also when I press on new game the last rendered backgrounds should be cleared and only use mine
+//        - portal effect?
+*/       
 public class FlapNDash {
 
     JFrame f; // frame
@@ -39,7 +38,7 @@ public class FlapNDash {
     final int PIPE_WIDTH = 80;
     final int PIPE_GAP = 200;
     int PIPE_SPEED = 4;
-    private String readyText = "Ready?";
+    private String readyText = "Gravity Flipped!";
     private float textAlpha = 1.0f; // Opacity value for fading
     private boolean isFading = false;
     private boolean draw_Notification = false;
@@ -360,38 +359,38 @@ for (Rectangle pipe : pipes) {
         }
     }
     
-    private void gravity_flipped_stuff(){
-        // Simulate score update for testing
-            BACKGROUND_SPEED = 2;
-            PIPE_SPEED = 2;
-
-            // Start fading effect
-            isFading = true;
-            // Create a timer for fading text
-            Timer fadeTimer = new Timer(500, new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent e) {
-                    if (isFading) {
-                        draw_Notification = true;
-                        textAlpha -= 0.1f; // Decrease opacity
-                        if (textAlpha <= 0) {
-                            textAlpha = 0; // Cap the opacity at 0
-                            ((Timer) e.getSource()).stop(); // Stop fading timer
-                            isFading = false; // Mark fading as complete
-                            draw_Notification = false;
-                        }
-                        f.repaint(); // Repaint to update text visibility
+    private void gravity_flipped_stuff() {
+        BACKGROUND_SPEED = 2;
+        PIPE_SPEED = 2;
+        
+        // Reset text properties
+        textAlpha = 1.0f;
+        draw_Notification = true;
+        readyText = "Gravity Flip!";
+        
+        // Create a timer for fading text
+        Timer fadeTimer = new Timer(50, new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                if (textAlpha > 0) {
+                    textAlpha -= 0.05f;
+                    if (textAlpha <= 0) {
+                        textAlpha = 0;
+                        draw_Notification = false;
+                        ((Timer)e.getSource()).stop();
                     }
                 }
-            });
-            fadeTimer.start();
-
-            // Timer to reset speeds after 1.5 seconds
-            new Timer(500, event -> {
-                BACKGROUND_SPEED = 4; // Reset to original speed
-                PIPE_SPEED = 4; // Reset to original speed
-            }).start();
-        
+                f.repaint();
+            }
+        });
+        fadeTimer.start();
+    
+        // Reset speeds after delay
+        new Timer(1500, event -> {
+            BACKGROUND_SPEED = 4;
+            PIPE_SPEED = 4;
+            ((Timer)event.getSource()).stop();
+        }).start();
     }
     private void jump() {
         birdVelocity = JUMP_STRENGTH;
