@@ -7,70 +7,46 @@ import java.util.List;
 import java.util.Random;
 import javax.imageio.ImageIO;
 import javax.swing.*;
-import javax.swing.plaf.basic.BasicInternalFrameTitlePane;
 /* 
-// To do: - MUST: portals,
-//        - animation to jump into mine when pressing on start and dying in lava or ether when dying/losing
-//        - texture pipes
+// To do: - MUST: reset settings to default, gravity flip text improve
+//        - animation of falling/jumping into the cave or just falling; animation of floating around in the void?
 //        - portal effect?
+//        - difficulty menu?
 */       
 public class FlapNDash {
-
-    JFrame f; // frame
-    List<BufferedImage> backgroundImages; // arr of bg images
-    BufferedImage characterImg, pipeImg, startBackgroundImage, endBackgroundImage;
-    boolean gameRunning = false; // state of the game
-    boolean start_screen = true;
-    boolean end_screen = false;
-    JLabel scoreLabel;
-    int score = 0;
-    int birdY = 0, birdVelocity = 0;
-    int backgroundX1 = 0, backgroundX2;
-    int BACKGROUND_SPEED = 4;
-    int currentBackgroundIndex = 0;
-    int pipes_added = 0;
-    List<Rectangle> pipes = new ArrayList<>();
-    private Rectangle portalPipe = null;
-    Random random = new Random();
-    int gravity = 1;
-    int n;  
-    final int JUMP_STRENGTH = -10;
-    final int PIPE_SPACING = 400;
-    final int PIPE_WIDTH = 80;
-    final int PIPE_GAP = 200;
-    int PIPE_SPEED = 4;
-    private String readyText = "Gravity Flipped!";
-    private float textAlpha = 1.0f; // Opacity value for fading
-    private boolean isFading = false;
-    private boolean draw_Notification = false;
-
-    int pipeCounter = 0;  // Counter for passed pipes
-    boolean gravityFlipped = false;  // Track if gravity is flipped
-    Color specialPipeColor = Color.RED;  // Color for the pipe where gravity flips
-
+    // Swing
+    JFrame f;
     JButton newGameButton;
     JButton exitGameButton;
+    JLabel scoreLabel;
+    JButton startButton;
 
-    // object constructor
+    List<BufferedImage> backgroundImages; // arr of bg images
+    List<Rectangle> pipes = new ArrayList<>();
+    BufferedImage characterImg, startBackgroundImage, endBackgroundImage;
+    Color specialPipeColor = Color.RED;  // Color for the pipe where gravity flips
+    Random random = new Random();
+    Rectangle portalPipe = null;
+    float textAlpha = 1.0f; // Opacity value for fading
+
+    boolean gameRunning = false, start_screen = true, end_screen = false, gravityFlipped = false; // state of the game
+    int score = 0, birdY = 0, birdVelocity = 0, backgroundX1 = 0, backgroundX2, n, pipes_added = 0, currentBackgroundIndex = 0;
+    int gravity = 1, PIPE_SPEED = 4, BACKGROUND_SPEED = 4;
+    final int JUMP_STRENGTH = -10, PIPE_SPACING = 400, PIPE_WIDTH = 80, PIPE_GAP = 200;
+
+    // constructor
     public FlapNDash() {
         // main init
         f = new JFrame("Flap n Dash");
-        pipes.clear();
-        //n = (int) (Math.random() * (8 - 5 + 1)) + 3;
-        //System.out.println(n);
         backgroundImages = new ArrayList<>();
         try {
             backgroundImages.add(ImageIO.read(new File("image/w_cave1.jpg"))); // 0
             backgroundImages.add(ImageIO.read(new File("image/w_cave2.jpg")));
             backgroundImages.add(ImageIO.read(new File("image/w_cave1_flipped.jpg")));
             backgroundImages.add(ImageIO.read(new File("image/w_cave2_flipped.jpg"))); // 3
-
-            //backgroundImages.add(ImageIO.read(new File("image/background2.png")));
             characterImg = ImageIO.read(new File("image/stefan.png"));
-            //pipeImg = ImageIO.read(new File("image/pipe.png"));
             startBackgroundImage = ImageIO.read(new File("image/realistic_cave.jpg"));
             endBackgroundImage = ImageIO.read(new File("image/void.jpg"));
-
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -104,13 +80,7 @@ public class FlapNDash {
                         g.drawImage(currentBackground, backgroundX2, 0, null);
                     }
                 }
-                if (draw_Notification)
-                {
-                    FontMetrics fm = g.getFontMetrics();
-                    int x = (getWidth() - fm.stringWidth(readyText)) / 2; // Center the text
-                    int y = getHeight() / 2;
-                    g.drawString(readyText, x, y);
-                }
+
                 // Draw character only if the game is running
                 if (gameRunning && characterImg != null) {
                     int newCharacterWidth = 80;  
@@ -119,13 +89,14 @@ public class FlapNDash {
             
                     Image scaledImage = characterImg.getScaledInstance(
                         newCharacterWidth, newCharacterHeight, Image.SCALE_SMOOTH);
-            
                     g.drawImage(scaledImage, characterX, birdY, this);
                 }
 
-                // Draw portal first (before pipes)
+                // Draw portal first (before the pipes are being drawn)
                 if (portalPipe != null) {
-                    g2d.setColor(new Color(0, 255, 255, 128)); // Cyan with transparency
+                    if(!gravityFlipped)
+                        g2d.setColor(new Color(128, 0, 128, 128));
+                    else g2d.setColor(new Color(255, 0, 0, 128));
                     g2d.fillRect(portalPipe.x, portalPipe.y, portalPipe.width, portalPipe.height);
     
                     // Add portal effect
@@ -150,13 +121,14 @@ public class FlapNDash {
 
         panel.setLayout(null);
 
+        // Swing labels + buttons 
         scoreLabel = new JLabel("Score: " + score);
         scoreLabel.setFont(new Font("Arial", Font.BOLD, 30));
         scoreLabel.setBounds(10, 10, 200, 50);
         scoreLabel.setForeground(new Color(173, 216, 230));
         panel.add(scoreLabel);
 
-        JButton startButton = new JButton("Start");
+        startButton = new JButton("Start");
         startButton.setFont(new Font("Arial", Font.BOLD, 35));
         startButton.setBounds(240, 300, 160, 64);
         panel.add(startButton);
@@ -167,13 +139,13 @@ public class FlapNDash {
         newGameButton.setVisible(false);  // Initially hidden
         panel.add(newGameButton);
 
-        
         exitGameButton = new JButton("Exit");
         exitGameButton.setFont(new Font("Arial", Font.BOLD, 35));
         exitGameButton.setBounds(240, 380, 160, 64);
         exitGameButton.setVisible(true);  // Initially shown
         panel.add(exitGameButton);
 
+        // times to run game loop which updates 30 times per second so 30fps
         Timer gameLoop = new Timer(30, new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -189,7 +161,6 @@ public class FlapNDash {
             @Override
             public void actionPerformed(ActionEvent e) {
                 gameRunning = true;
-                //panel.repaint();
                 startButton.setVisible(false);
                 newGameButton.setVisible(false);
                 exitGameButton.setVisible(false);
@@ -245,12 +216,14 @@ public class FlapNDash {
             }
         });
 
+        // settings for the frame, so for the window that we render on
         f.setSize(700, 900);
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         f.setVisible(true);
         f.setResizable(false);
         f.setFocusable(true);
-
+        
+        // centering it
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         int x = (screenSize.width - f.getWidth()) / 2;
         int y = (screenSize.height - f.getHeight()) / 2;
@@ -290,54 +263,51 @@ public class FlapNDash {
         birdY += birdVelocity;
     
         Rectangle bird = new Rectangle(100, birdY, 50, 50);
-    boolean scoredThisFrame = false;
+        boolean scoredThisFrame = false;
 
-    // Update and check pipes
-    for (int i = 0; i < pipes.size(); i += 2) { // Increment by 2 since pipes are in pairs
-        Rectangle pipe = pipes.get(i);
-        pipe.x -= PIPE_SPEED;
-        pipes.get(i + 1).x -= PIPE_SPEED; // Move the matching top pipe
+        // Update and check pipes
+        for (int i = 0; i < pipes.size(); i += 2) { // Increment by 2 since pipes are in pairs
+            Rectangle pipe = pipes.get(i);
+            pipe.x -= PIPE_SPEED;
+            pipes.get(i + 1).x -= PIPE_SPEED; // Move the matching top pipe
 
-        // Score when passing through pipes (check only once per pipe pair)
-        if (!scoredThisFrame && pipe.x + pipe.width <= 100 && pipe.x + pipe.width > 100 - PIPE_SPEED) {
-            score++;
-            scoredThisFrame = true;
-            scoreLabel.setText("Score: " + score);
+            // Score when passing through pipes (check only once per pipe pair)
+            if (!scoredThisFrame && pipe.x + pipe.width <= 100 && pipe.x + pipe.width > 100 - PIPE_SPEED) {
+                score++;
+                scoredThisFrame = true;
+                scoreLabel.setText("Score: " + score);
+            }
+
+            // Remove pipes that are off screen
+            if (pipe.x + pipe.width < 0) {
+                pipes.remove(i + 1); // Remove top pipe
+                pipes.remove(i);     // Remove bottom pipe
+                i -= 2; // Adjust index since we removed two pipes
+                continue;
+            }
+
+            // Collision detection
+            if (bird.intersects(pipe) || bird.intersects(pipes.get(i + 1))) {
+                gameOver();
+                return;
+            }
         }
 
-        // Remove pipes that are off screen
-        if (pipe.x + pipe.width < 0) {
-            pipes.remove(i + 1); // Remove top pipe
-            pipes.remove(i);     // Remove bottom pipe
-            i -= 2; // Adjust index since we removed two pipes
-            continue;
+        // Add new pipes based on spacing, not scoring
+        if (pipes.isEmpty() || pipes.get(pipes.size() - 2).x < f.getWidth() - PIPE_SPACING) {
+            addPipe();
         }
 
-        // Collision detection
-        if (bird.intersects(pipe) || bird.intersects(pipes.get(i + 1))) {
-            gameOver();
-            return;
-        }
-    }
-
-    // Add new pipes based on spacing, not scoring
-    if (pipes.isEmpty() || pipes.get(pipes.size() - 2).x < f.getWidth() - PIPE_SPACING) {
-        addPipe();
-    }
-
-        if(score == n && score > 0)
-        {
-            System.out.println("Time to flip grav");
+        // changes gravity based on the score
+        if(score == n && score > 0) {
             gravityFlipped = !gravityFlipped;
-            n += (int) (Math.random() * (10 - 5 + 1)) + 5;
-            System.out.println(n);
-            /* 
-            BACKGROUND_SPEED = 2;
-            PIPE_SPEED = 2; */
+            n += (int) (Math.random() * (11)) + 5; // generates a number between 0 and 10 + 5 shift so between 5 and 15
+            System.out.println(String.format("Next gravity flip at: %d", n));
             portalPipe = null;
             gravity_flipped_stuff();
         }
-        
+
+        // bird touches the top or bottom of the screen
         if (birdY > f.getHeight() || birdY < 0) {
             gameOver();
         }
@@ -346,36 +316,15 @@ public class FlapNDash {
     private void gravity_flipped_stuff() {
         BACKGROUND_SPEED = 2;
         PIPE_SPEED = 2;
-        
-        // Reset text properties
-        textAlpha = 1.0f;
-        draw_Notification = true;
-        readyText = "Gravity Flip!";
-        
-        // Create a timer for fading text
-        Timer fadeTimer = new Timer(50, new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                if (textAlpha > 0) {
-                    textAlpha -= 0.05f;
-                    if (textAlpha <= 0) {
-                        textAlpha = 0;
-                        draw_Notification = false;
-                        ((Timer)e.getSource()).stop();
-                    }
-                }
-                f.repaint();
-            }
-        });
-        fadeTimer.start();
     
         // Reset speeds after delay
-        new Timer(1500, event -> {
+        new Timer(1000, event -> {
             BACKGROUND_SPEED = 4;
             PIPE_SPEED = 4;
             ((Timer)event.getSource()).stop();
         }).start();
     }
+
     private void jump() {
         birdVelocity = JUMP_STRENGTH;
     }
@@ -384,6 +333,7 @@ public class FlapNDash {
         birdVelocity = -JUMP_STRENGTH;
     }
 
+    // handles action with pipes, and also with portal (adds/removes them)
     private void addPipe() {
         int height = 50 + random.nextInt(400);
         int pipeX = f.getWidth();
@@ -399,7 +349,7 @@ public class FlapNDash {
         pipes.add(bottomPipe);
         pipes.add(topPipe);
         
-        // Check if this is the set of pipes where we should add the portal
+        // Check if this is the set of pipes where we should add the portal; we use n-2 because the current pipe would be n
         if (score == n - 2) {
             portalPipe = new Rectangle(
                 pipeX,  
@@ -407,30 +357,27 @@ public class FlapNDash {
                 PIPE_WIDTH,  
                 PIPE_GAP  
             );
-            System.out.println("Portal added at score: " + score + ", n: " + n);
         }
-        
         pipes_added++;
     }
 
+    // resets the game, everything to initial values
     private void resetGame() {
         pipes.clear();
-        n = 5 + (int)(Math.random() * 11);
         score = 0;
         scoreLabel.setText("Score: " + score);
         birdY = (f.getHeight() - 50) / 2; 
         birdVelocity = 0; 
         gravityFlipped = false;  // Reset gravity state
-        pipeCounter = 0;  // Reset pipe counter
         portalPipe = null;  // Reset portal
-        pipes_added = 0;    // Reset pipe counter
-        currentBackgroundIndex = 0;
-        draw_Notification = false;  
-        n = (int) (Math.random() * (8 - 5 + 1)) + 3;
-        System.out.println(n);
+        pipes_added = 0;
+        currentBackgroundIndex = 0; // Reset background
+        n = (int) (Math.random() * (11)) + 5; // generates a number between 0 and 10 + 5 shift so between 5 and 15
+        System.out.println(String.format("Next gravity flip at: %d", n));
         addPipe();
     }
 
+    // stops the gameloop and displays the game over screen
     private void gameOver() {
         scoreLabel.setText("Score: " + score);
         gameRunning = false;
