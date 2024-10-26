@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Random;
 import javax.imageio.ImageIO;
 import javax.swing.*;
+import javax.swing.plaf.basic.BasicInternalFrameTitlePane;
 /* 
 // To do: - MUST: portals,
 //        - animation to jump into mine when pressing on start and dying in lava or ether when dying/losing
@@ -84,6 +85,7 @@ public class FlapNDash {
             @Override
             protected void paintComponent(Graphics g) {
                 super.paintComponent(g);
+                Graphics2D g2d = (Graphics2D) g;
 
                 // Draw the appropriate background based on game state
                 if (start_screen && startBackgroundImage != null) {
@@ -121,47 +123,28 @@ public class FlapNDash {
                     g.drawImage(scaledImage, characterX, birdY, this);
                 }
 
-                // Inside your paintComponent method, replace the pipe rendering section:
-Graphics2D g2d = (Graphics2D) g;
+                // Draw portal first (before pipes)
+                if (portalPipe != null) {
+                    g2d.setColor(new Color(0, 255, 255, 128)); // Cyan with transparency
+                    g2d.fillRect(portalPipe.x, portalPipe.y, portalPipe.width, portalPipe.height);
+    
+                    // Add portal effect
+                    g2d.setColor(Color.WHITE);
+                    g2d.setStroke(new BasicStroke(2.0f));
+                    g2d.drawRect(portalPipe.x, portalPipe.y, portalPipe.width, portalPipe.height);
+    
+                    // Add swirl effect
+                    for(int i = 0; i < portalPipe.height; i += 10) {
+                        g2d.drawLine(portalPipe.x, portalPipe.y + i, 
+                        portalPipe.x + portalPipe.width, portalPipe.y + i);
+                    }
+                }
 
-// Draw the portal first (if it exists)
-if (portalPipe != null) {
-    // Enable antialiasing for smoother rendering
-    g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-    
-    // Save the original composite
-    Composite originalComposite = g2d.getComposite();
-    
-    // Set up for transparent portal effect
-    AlphaComposite alphaComposite = AlphaComposite.getInstance(AlphaComposite.SRC_OVER, 0.6f);
-    g2d.setComposite(alphaComposite);
-    
-    // Create a more visible gradient
-    GradientPaint gradient = new GradientPaint(
-        portalPipe.x, portalPipe.y, new Color(0, 191, 255),  // Deep Sky Blue
-        portalPipe.x + portalPipe.width, portalPipe.y + portalPipe.height, 
-        new Color(138, 43, 226)  // Blue Violet
-    );
-    g2d.setPaint(gradient);
-    
-    // Draw the portal with a glow effect
-    g2d.fillRect(portalPipe.x, portalPipe.y, portalPipe.width, portalPipe.height);
-    
-    // Add a border to make it more visible
-    g2d.setStroke(new BasicStroke(3.0f));
-    g2d.setColor(Color.WHITE);
-    g2d.drawRect(portalPipe.x, portalPipe.y, portalPipe.width, portalPipe.height);
-    
-    // Restore original composite
-    g2d.setComposite(originalComposite);
-}
-
-// Then draw the pipes
-for (Rectangle pipe : pipes) {
-    g2d.setColor(gravityFlipped ? specialPipeColor : Color.LIGHT_GRAY);
-    g2d.fillRect(pipe.x, pipe.y, pipe.width, pipe.height);
-}
-                   
+                // Then draw the pipes
+                for (Rectangle pipe : pipes) {
+                    g2d.setColor(gravityFlipped ? specialPipeColor : Color.LIGHT_GRAY);
+                    g2d.fillRect(pipe.x, pipe.y, pipe.width, pipe.height);
+                }   
             }
         };
 
@@ -201,7 +184,6 @@ for (Rectangle pipe : pipes) {
             }
         });
         
-
         // start button event click
         startButton.addActionListener(new ActionListener() {
             @Override
@@ -291,7 +273,15 @@ for (Rectangle pipe : pipes) {
         if (backgroundX2 + backgroundWidth <= 0) {
             backgroundX2 = backgroundX1 + backgroundWidth; 
         }
-            
+        
+        // Update portal position
+        if (portalPipe != null) {
+            portalPipe.x -= PIPE_SPEED;
+            if (portalPipe.x + portalPipe.width < 0) {
+            portalPipe = null;
+            }
+        }
+
         if (gravityFlipped) {
             birdVelocity -= gravity;  // Gravity is reversed (pulling bird upwards)
         } else {
@@ -344,16 +334,10 @@ for (Rectangle pipe : pipes) {
             /* 
             BACKGROUND_SPEED = 2;
             PIPE_SPEED = 2; */
+            portalPipe = null;
             gravity_flipped_stuff();
         }
         
-        // Add this to your updateGame method where you check for score == n
-    if(score == n && score > 0) {
-    System.out.println("Current score: " + score);
-    System.out.println("Target n: " + n);
-    System.out.println("Portal exists: " + (portalPipe != null));
-    // ... rest of your gravity flip code
-}
         if (birdY > f.getHeight() || birdY < 0) {
             gameOver();
         }
@@ -416,7 +400,7 @@ for (Rectangle pipe : pipes) {
         pipes.add(topPipe);
         
         // Check if this is the set of pipes where we should add the portal
-        if (score == n - 1) {
+        if (score == n - 2) {
             portalPipe = new Rectangle(
                 pipeX,  
                 f.getHeight() - height - PIPE_GAP,  
