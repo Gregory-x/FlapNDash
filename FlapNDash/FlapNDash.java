@@ -7,12 +7,7 @@ import java.util.List;
 import java.util.Random;
 import javax.imageio.ImageIO;
 import javax.swing.*;
-/* 
-// To do: - MUST: reset settings to default, gravity flip text improve
-//        - animation of falling/jumping into the cave or just falling; animation of floating around in the void?
-//        - portal effect?
-//        - difficulty menu?
-*/       
+   
 public class FlapNDash {
     // Swing
     JFrame f;
@@ -27,23 +22,22 @@ public class FlapNDash {
     Color specialPipeColor = Color.RED;  // Color for the pipe where gravity flips
     Random random = new Random();
     Rectangle portalPipe = null;
-    float textAlpha = 1.0f; // Opacity value for fading
-
-    boolean gameRunning = false, start_screen = true, end_screen = false, gravityFlipped = false; // state of the game
+    
+    boolean gameRunning = false, start_screen = true, end_screen = false, gravityFlipped = false;
     int score = 0, birdY = 0, birdVelocity = 0, backgroundX1 = 0, backgroundX2, n, pipes_added = 0, currentBackgroundIndex = 0;
+    // variables changing difficulty
     int gravity = 1, PIPE_SPEED = 4, BACKGROUND_SPEED = 4;
     final int JUMP_STRENGTH = -10, PIPE_SPACING = 400, PIPE_WIDTH = 80, PIPE_GAP = 200;
 
     // constructor
     public FlapNDash() {
-        // main init
         f = new JFrame("Flap n Dash");
         backgroundImages = new ArrayList<>();
         try {
-            backgroundImages.add(ImageIO.read(new File("image/w_cave1.jpg"))); // 0
+            backgroundImages.add(ImageIO.read(new File("image/w_cave1.jpg")));
             backgroundImages.add(ImageIO.read(new File("image/w_cave2.jpg")));
             backgroundImages.add(ImageIO.read(new File("image/w_cave1_flipped.jpg")));
-            backgroundImages.add(ImageIO.read(new File("image/w_cave2_flipped.jpg"))); // 3
+            backgroundImages.add(ImageIO.read(new File("image/w_cave2_flipped.jpg")));
             characterImg = ImageIO.read(new File("image/stefan.png"));
             startBackgroundImage = ImageIO.read(new File("image/realistic_cave.jpg"));
             endBackgroundImage = ImageIO.read(new File("image/void.jpg"));
@@ -382,6 +376,7 @@ public class FlapNDash {
         scoreLabel.setText("Score: " + score);
         gameRunning = false;
         pipes.clear();
+        portalPipe = null;
         end_screen = true;
         newGameButton.setVisible(true);
         exitGameButton.setVisible(true);
